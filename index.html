@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stephen Birch — Aerospace Engineering</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2337;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.15);
+    --accent-warm: #f59e0b;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-bright: #f8fafc;
+    --border: rgba(148, 163, 184, 0.1);
+    --border-hover: rgba(59, 130, 246, 0.3);
+    --radius: 12px;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Outfit', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ─── Starfield Background ─── */
+  .stars {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .stars::before, .stars::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,0.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.35) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 15% 75%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 15%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 45% 90%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 65% 35%, rgba(59,130,246,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 45%, rgba(255,255,255,0.15) 0%, transparent 100%);
+    animation: drift 80s linear infinite;
+  }
+  .stars::after {
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 70%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 20%, rgba(59,130,246,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 55% 55%, rgba(255,255,255,0.3) 0%, transparent 100%);
+    animation: drift 120s linear infinite reverse;
+  }
+  @keyframes drift {
+    from { transform: translateY(0); }
+    to { transform: translateY(-30px); }
+  }
+
+  /* ─── Grid Overlay ─── */
+  .grid-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* ─── Content Wrapper ─── */
+  .content { position: relative; z-index: 1; }
+
+  /* ─── Navigation ─── */
+  nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+    padding: 16px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(20px);
+    background: rgba(10, 14, 23, 0.8);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    transition: color 0.3s;
+    position: relative;
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--accent);
+    transition: width 0.3s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links a:hover::after { width: 100%; }
+
+  /* ─── Hero ─── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 60px 80px;
+    max-width: 1300px;
+    margin: 0 auto;
+    gap: 80px;
+  }
+  .hero-text { flex: 1; }
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.2s;
+  }
+  .hero h1 {
+    font-size: clamp(48px, 6vw, 80px);
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.4s;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent), #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-desc {
+    font-size: 18px;
+    color: var(--text-dim);
+    max-width: 520px;
+    line-height: 1.8;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.6s;
+  }
+  .hero-cta {
+    display: flex;
+    gap: 16px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.8s;
+  }
+  .btn {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 14px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 30px rgba(59,130,246,0.3);
+  }
+  .btn-primary:hover {
+    background: #2563eb;
+    box-shadow: 0 0 50px rgba(59,130,246,0.5);
+    transform: translateY(-2px);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  /* Hero graphic */
+  .hero-graphic {
+    flex: 0 0 360px;
+    height: 360px;
+    position: relative;
+    opacity: 0;
+    animation: fadeIn 1.2s ease forwards 0.6s;
+  }
+  .orbit-ring {
+    position: absolute;
+    border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 50%;
+    animation: spin 20s linear infinite;
+  }
+  .orbit-ring:nth-child(1) { inset: 0; }
+  .orbit-ring:nth-child(2) { inset: 40px; animation-duration: 15s; animation-direction: reverse; border-color: rgba(59,130,246,0.1); }
+  .orbit-ring:nth-child(3) { inset: 80px; animation-duration: 25s; }
+  .orbit-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--accent);
+    top: -4px;
+    left: 50%;
+    margin-left: -4px;
+  }
+  .orbit-ring:nth-child(2) .orbit-dot { background: var(--accent-warm); box-shadow: 0 0 12px var(--accent-warm); }
+  .orbit-center {
+    position: absolute;
+    inset: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59,130,246,0.2), transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .orbit-center-inner {
+    width: 20px;
+    height: 20px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 40px rgba(59,130,246,0.6);
+  }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* ─── Section Layout ─── */
+  section {
+    padding: 100px 60px;
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+  .section-header {
+    margin-bottom: 60px;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 600;
+    color: var(--text-bright);
+    letter-spacing: -1px;
+  }
+
+  /* ─── About ─── */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: start;
+  }
+  .about-text p {
+    color: var(--text-dim);
+    font-size: 16px;
+    margin-bottom: 20px;
+    line-height: 1.85;
+  }
+  .about-text p strong { color: var(--text); font-weight: 500; }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    transition: all 0.3s;
+  }
+  .stat-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+    transform: translateY(-4px);
+  }
+  .stat-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: var(--mono);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ─── Projects ─── */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .project-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 40px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 32px;
+    align-items: start;
+    transition: all 0.4s;
+    position: relative;
+    overflow: hidden;
+  }
+  .project-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 0;
+    background: linear-gradient(180deg, var(--accent), transparent);
+    transition: height 0.4s;
+  }
+  .project-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+    transform: translateY(-4px);
+  }
+  .project-card:hover::before { height: 100%; }
+  .project-name {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 12px;
+  }
+  .project-desc {
+    color: var(--text-dim);
+    font-size: 15px;
+    line-height: 1.8;
+    margin-bottom: 20px;
+  }
+  .project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(59,130,246,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(59,130,246,0.15);
+    letter-spacing: 0.5px;
+  }
+  .project-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+  }
+  .project-status.active {
+    color: #34d399;
+    border-color: rgba(52,211,153,0.3);
+    background: rgba(52,211,153,0.05);
+  }
+
+  /* ─── Skills ─── */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .skill-group {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px;
+    transition: all 0.3s;
+  }
+  .skill-group:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-4px);
+  }
+  .skill-group-icon {
+    font-size: 28px;
+    margin-bottom: 16px;
+  }
+  .skill-group-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 16px;
+  }
+  .skill-list {
+    list-style: none;
+  }
+  .skill-list li {
+    font-size: 14px;
+    color: var(--text-dim);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .skill-list li:last-child { border-bottom: none; }
+  .skill-list li::before {
+    content: '›';
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* ─── Experience ─── */
+  .timeline {
+    position: relative;
+    padding-left: 40px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: linear-gradient(180deg, var(--accent), rgba(59,130,246,0.1));
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 48px;
+  }
+  .timeline-item:last-child { margin-bottom: 0; }
+  .timeline-dot {
+    position: absolute;
+    left: -44px;
+    top: 8px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 16px rgba(59,130,246,0.5);
+  }
+  .timeline-date {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .timeline-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+  }
+  .timeline-subtitle {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .timeline-desc {
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  /* ─── Contact ─── */
+  .contact-section {
+    text-align: center;
+    padding: 120px 60px;
+  }
+  .contact-section .section-header { margin-bottom: 40px; }
+  .contact-desc {
+    color: var(--text-dim);
+    font-size: 17px;
+    max-width: 520px;
+    margin: 0 auto 48px;
+    line-height: 1.8;
+  }
+  .contact-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .contact-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 36px;
+    text-decoration: none;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .contact-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-4px);
+    background: var(--bg-card-hover);
+  }
+  .contact-card svg { width: 20px; height: 20px; color: var(--accent); }
+  .contact-card-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .contact-card-value {
+    font-size: 15px;
+    color: var(--text-bright);
+  }
+
+  /* ─── Footer ─── */
+  footer {
+    text-align: center;
+    padding: 40px 60px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ─── Animations ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 900px) {
+    nav { padding: 14px 24px; }
+    .nav-links { gap: 20px; }
+    .hero { flex-direction: column; padding: 120px 28px 60px; gap: 40px; }
+    .hero-graphic { flex: 0 0 260px; width: 260px; height: 260px; }
+    .orbit-center { inset: 80px; }
+    section { padding: 80px 28px; }
+    .about-grid { grid-template-columns: 1fr; }
+    .skills-grid { grid-template-columns: 1fr; }
+    .project-card { grid-template-columns: 1fr; }
+    .project-status { justify-self: start; }
+    .contact-links { flex-direction: column; align-items: center; }
+  }
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .hero h1 { letter-spacing: -1px; }
+    .stats-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+<div class="grid-overlay"></div>
+
+<div class="content">
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-logo">S.Birch</div>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#projects">Projects</a>
+      <a href="#skills">Skills</a>
+      <a href="#experience">Experience</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-text">
+      <div class="hero-tag">Aerospace Engineering · Rutgers University</div>
+      <h1>Stephen<br><span>Birch</span></h1>
+      <p class="hero-desc">Junior aerospace engineering student with a background in music performance, building CFD tools and mechatronic systems. Seeking a summer 2026 engineering internship.</p>
+      <div class="hero-cta">
+        <a href="#contact" class="btn btn-primary">Get in Touch</a>
+        <a href="#projects" class="btn btn-ghost">View Projects</a>
+        <a href="Stephen_Birch_Resume.pdf" download class="btn btn-ghost" style="display:flex;align-items:center;gap:8px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Resume
+        </a>
+      </div>
+    </div>
+    <div class="hero-graphic">
+      <div class="orbit-ring"><div class="orbit-dot"></div></div>
+      <div class="orbit-ring"><div class="orbit-dot"></div></div>
+      <div class="orbit-ring"><div class="orbit-dot"></div></div>
+      <div class="orbit-center"><div class="orbit-center-inner"></div></div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about">
+    <div class="section-header reveal">
+      <div class="section-label">01 — About</div>
+      <div class="section-title">From Stage to Launchpad</div>
+    </div>
+    <div class="about-grid">
+      <div class="about-text reveal">
+        <p>I started my academic journey studying <strong>cello performance at Interlochen Arts Academy</strong>, one of the nation's premier arts boarding schools. As a musician, I learned that excellence requires relentless practice, collaboration, and thoughtful compromise — every ensemble member contributes to a greater whole.</p>
+        <p>That same mindset now drives my work in <strong>aerospace engineering at Rutgers University</strong>. Switching from music to engineering meant adapting to completely different ways of thinking, but it taught me how to quickly absorb new concepts, persist through complex challenges, and apply creative thinking to technical problems.</p>
+        <p>Today I'm building <strong>computational fluid dynamics tools from scratch</strong>, designing mechanical systems, and serving as treasurer for a campus organization — always learning, always building.</p>
+      </div>
+      <div class="stats-grid reveal">
+        <div class="stat-card">
+          <div class="stat-number">3+</div>
+          <div class="stat-label">Engineering Projects</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">6+</div>
+          <div class="stat-label">Technical Tools</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">$3K</div>
+          <div class="stat-label">Funds Raised</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">'27</div>
+          <div class="stat-label">Expected Grad</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Projects -->
+  <section id="projects">
+    <div class="section-header reveal">
+      <div class="section-label">02 — Projects</div>
+      <div class="section-title">What I've Built</div>
+    </div>
+    <div class="projects-grid">
+      <div class="project-card reveal">
+        <div>
+          <div class="project-name">Computational Fluid Dynamics Program</div>
+          <p class="project-desc">Building a custom CFD solver with SolidWorks integration. Translates SolidWorks CAD models into usable simulation data, applies Navier-Stokes equations with Finite Element Analysis for fluid simulation, and will feature 2D cross-section flow visualization across the full wingspan.</p>
+          <div class="project-tags">
+            <span class="tag">C</span>
+            <span class="tag">MATLAB</span>
+            <span class="tag">MATLAB Simulink</span>
+            <span class="tag">SolidWorks</span>
+            <span class="tag">Navier-Stokes</span>
+            <span class="tag">FEA</span>
+          </div>
+        </div>
+        <span class="project-status active">● In Progress</span>
+      </div>
+      <div class="project-card reveal">
+        <div>
+          <div class="project-name">Steel Bear Canister</div>
+          <p class="project-desc">Designed a steel bear canister exploring multiple geometries and incorporating industry-standard hardware. Used PrePoMax with custom meshing parameters for accurate simulation under various loading conditions, optimizing for weight and structural integrity.</p>
+          <div class="project-tags">
+            <span class="tag">SolidWorks</span>
+            <span class="tag">PrePoMax</span>
+            <span class="tag">CalculiX</span>
+            <span class="tag">FEA</span>
+          </div>
+        </div>
+        <span class="project-status">Completed</span>
+      </div>
+      <div class="project-card reveal">
+        <div>
+          <div class="project-name">Light-Activated Food Dispenser</div>
+          <p class="project-desc">Engineered an Arduino-based mechatronic system using photoresistors for ambient light detection, a custom control panel for user-adjustable dispensing, an integrated LCD display, and a stepper motor with gearbox for precision torque-controlled food delivery.</p>
+          <div class="project-tags">
+            <span class="tag">Arduino</span>
+            <span class="tag">Mechatronics</span>
+            <span class="tag">Stepper Motors</span>
+            <span class="tag">Sensor Systems</span>
+          </div>
+        </div>
+        <span class="project-status">Completed</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Skills -->
+  <section id="skills">
+    <div class="section-header reveal">
+      <div class="section-label">03 — Skills</div>
+      <div class="section-title">Technical Toolkit</div>
+    </div>
+    <div class="skills-grid">
+      <div class="skill-group reveal">
+        <div class="skill-group-icon">⚙️</div>
+        <div class="skill-group-title">Engineering</div>
+        <ul class="skill-list">
+          <li>Mechanical Component Design</li>
+          <li>CAD Modeling</li>
+          <li>Dynamic System Modeling</li>
+          <li>Mechatronic Design & Analysis</li>
+          <li>Airfoil Design & Performance</li>
+        </ul>
+      </div>
+      <div class="skill-group reveal">
+        <div class="skill-group-icon">🖥️</div>
+        <div class="skill-group-title">Software</div>
+        <ul class="skill-list">
+          <li>SolidWorks</li>
+          <li>MATLAB Simulink</li>
+          <li>PrePoMax / CalculiX</li>
+          <li>Microsoft Visual Studio</li>
+          <li>Arduino IDE</li>
+        </ul>
+      </div>
+      <div class="skill-group reveal">
+        <div class="skill-group-icon">💻</div>
+        <div class="skill-group-title">Programming</div>
+        <ul class="skill-list">
+          <li>MATLAB</li>
+          <li>C</li>
+          <li>Python</li>
+          <li>LaTeX</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Experience -->
+  <section id="experience">
+    <div class="section-header reveal">
+      <div class="section-label">04 — Experience</div>
+      <div class="section-title">Where I've Been</div>
+    </div>
+    <div class="timeline">
+      <div class="timeline-item reveal">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Fall 2024 — Present</div>
+        <div class="timeline-title">Treasurer — First Light Christian Acapella</div>
+        <div class="timeline-subtitle">Rutgers University–New Brunswick</div>
+        <p class="timeline-desc">Managing university-distributed funds for equipment, travel, and catering. Raised and financed $3,000 for a conference at MIT and negotiated funding for a trip to Carnegie Mellon. Organizing fundraising events and performance opportunities to grow the group's presence on campus.</p>
+      </div>
+      <div class="timeline-item reveal">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">June 2024 — August 2024</div>
+        <div class="timeline-title">Sales Associate — Highland Hiker</div>
+        <div class="timeline-subtitle">Cashiers, North Carolina</div>
+        <p class="timeline-desc">Assisted customers with outdoor equipment, specializing in footwear fitting. Worked with RICS retail software for inventory management and product balancing across franchise locations. Gained knowledge of advanced material properties including PFOS waterproofing and Gore-Tex technologies.</p>
+      </div>
+      <div class="timeline-item reveal">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Sept 2023 — May 2027 (Expected)</div>
+        <div class="timeline-title">B.S. Aerospace Engineering</div>
+        <div class="timeline-subtitle">Rutgers University–New Brunswick</div>
+        <p class="timeline-desc">Pursuing a Bachelor of Science with coursework spanning fluid dynamics, mechanical design, dynamic systems, and programming.</p>
+      </div>
+      <div class="timeline-item reveal">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Sept 2021 — May 2023</div>
+        <div class="timeline-title">Cello Performance</div>
+        <div class="timeline-subtitle">Interlochen Arts Academy, Michigan</div>
+        <p class="timeline-desc">Studied cello performance at one of the nation's premier arts boarding schools, developing discipline, collaboration, and creative problem-solving skills that now inform an engineering mindset.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="contact-section">
+    <div class="section-header reveal">
+      <div class="section-label">05 — Contact</div>
+      <div class="section-title">Let's Connect</div>
+    </div>
+    <p class="contact-desc reveal">I'm actively seeking a summer 2026 engineering internship. Whether it's aerospace, mechanical, or UAS — I'd love to hear from you.</p>
+    <div class="contact-links reveal">
+      <a href="mailto:stephen@birch.co" class="contact-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        <div>
+          <div class="contact-card-label">Email</div>
+          <div class="contact-card-value">stephen@birch.co</div>
+        </div>
+      </a>
+      <a href="tel:7328890280" class="contact-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <div>
+          <div class="contact-card-label">Phone</div>
+          <div class="contact-card-value">(732) 889-0280</div>
+        </div>
+      </a>
+      <a href="https://www.linkedin.com/in/stephenpbirch/" target="_blank" class="contact-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+        <div>
+          <div class="contact-card-label">LinkedIn</div>
+          <div class="contact-card-value">stephenpbirch</div>
+        </div>
+      </a>
+      <a href="Stephen_Birch_Resume.pdf" download class="contact-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+        <div>
+          <div class="contact-card-label">Resume</div>
+          <div class="contact-card-value">Download PDF</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    © 2026 Stephen Birch · Built with purpose
+  </footer>
+
+</div>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Smooth nav highlight
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(section => {
+      const top = section.offsetTop - 200;
+      if (scrollY >= top) current = section.getAttribute('id');
+    });
+    navLinks.forEach(link => {
+      link.style.color = link.getAttribute('href') === '#' + current ? 'var(--accent)' : '';
+    });
+  });
+</script>
+</body>
+</html>
