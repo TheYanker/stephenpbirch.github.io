@@ -691,6 +691,56 @@
     background: #fff;
   }
 
+  /* Natively rendered LinkedIn post — theme-aware, never blocked */
+  .window-body.post-card {
+    height: auto;
+    background: var(--bg-card);
+    overflow: visible;
+    display: block;
+  }
+  .post-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 22px 24px 0;
+  }
+  .post-avatar {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--accent-solid);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 15px;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .post-who { flex: 1 1 auto; min-width: 0; }
+  .post-author {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-bright);
+    line-height: 1.35;
+  }
+  .post-headline {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    line-height: 1.45;
+  }
+  .post-mark { flex: 0 0 auto; width: 22px; height: 22px; color: var(--accent); }
+  .post-body { padding: 18px 24px 24px; }
+  .post-body p {
+    font-size: 14.5px;
+    color: var(--text);
+    line-height: 1.75;
+    margin-bottom: 14px;
+  }
+  .post-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+  .post-tag { font-size: 13.5px; color: var(--accent); }
+
   /* Shown when an embed cannot render (no post set, or no inline PDF viewer) */
   .window-fallback {
     height: 100%;
@@ -1377,16 +1427,35 @@
   })();
 
   // ─── Latest LinkedIn post ───────────────────────────────────────────────
-  // LinkedIn has no public feed for a static site, so the post is pinned by
-  // URN. To update: open the post on LinkedIn → "..." menu → Embed this post,
-  // then copy the urn:li:... id out of the iframe src and paste it below.
-  const LINKEDIN_POST_URN = 'urn:li:share:7497114166005161984'; // e.g. 'urn:li:share:7123456789012345678'
+  // Rendered natively rather than through LinkedIn's <iframe> embed. Firefox
+  // classifies linkedin.com as a social tracker and blocks the embed under its
+  // default Enhanced Tracking Protection, leaving a blank white box; content
+  // blockers and Safari's ITP do the same. The block happens in the browser
+  // before any of our code runs, so it cannot be detected or worked around
+  // from the page. Holding the text here means the post always renders, in
+  // every browser, and follows the site's light/dark theme.
+  //
+  // To swap in a newer post: replace the fields below and update `url`.
+  const LINKEDIN_POST = {
+    author: 'Stephen Birch',
+    initials: 'SB',
+    headline: 'Aerospace Engineering Student | Rutgers University–New Brunswick',
+    url: 'https://www.linkedin.com/feed/update/urn:li:share:7497114166005161984/',
+    body: [
+      'Extremely excited to attend my first industry conference at Small Satellite Conference (SmallSat) tomorrow!',
+      'As a student studying Aerospace Engineering, having the opportunity to be able to go out to industry conferences and networking with industry professionals outside of academia is surprisingly rare. Most of an engineering student’s time is spent grinding for exams, classes, projects, and clubs, leaving very little time to get out and connect with the people who matter most in hiring.',
+      'I just wanted to thank Oliver Muoto for inviting me out to SmallSat and giving me this opportunity to get my foot through the door of the space industry. Being able to come out to SmallSat is not something I could have imagined attending when I started college, and it’s a reminder of how much a single invitation or conversation can change what feels possible.',
+      'If you’ll be at the Salt Palace this week, I’d love to connect, hear about the work you’re doing, and get a sense of where a young engineer like myself can fit into such a rapidly developing industry.'
+    ],
+    tags: ['#SmallSat2026', '#Aerospace', '#SmallSatellites', '#NewSpace', '#AerospaceEngineering']
+  };
 
   (function renderLinkedInPost() {
     const host = document.getElementById('linkedinBody');
     if (!host) return;
 
-    if (!LINKEDIN_POST_URN) {
+    const post = LINKEDIN_POST;
+    if (!post || !post.body || !post.body.length) {
       host.innerHTML =
         '<div class="window-fallback">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>' +
@@ -1395,12 +1464,44 @@
       return;
     }
 
-    const frame = document.createElement('iframe');
-    frame.src = 'https://www.linkedin.com/embed/feed/update/' + LINKEDIN_POST_URN;
-    frame.title = 'Latest LinkedIn post by Stephen Birch';
-    frame.loading = 'lazy';
-    frame.allowFullscreen = true;
-    host.appendChild(frame);
+    // Build with DOM nodes so post text is never parsed as markup.
+    const el = (tag, cls, text) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text) n.textContent = text;
+      return n;
+    };
+
+    const head = el('div', 'post-head');
+    head.appendChild(el('div', 'post-avatar', post.initials || ''));
+    const who = el('div', 'post-who');
+    who.appendChild(el('div', 'post-author', post.author));
+    who.appendChild(el('div', 'post-headline', post.headline));
+    head.appendChild(who);
+    const mark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    mark.setAttribute('viewBox', '0 0 24 24');
+    mark.setAttribute('class', 'post-mark');
+    mark.setAttribute('aria-hidden', 'true');
+    mark.innerHTML = '<path fill="currentColor" d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05a3.74 3.74 0 0 1 3.37-1.85c3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45z"/>';
+    head.appendChild(mark);
+
+    const body = el('div', 'post-body');
+    post.body.forEach(p => body.appendChild(el('p', null, p)));
+
+    if (post.tags && post.tags.length) {
+      const tags = el('div', 'post-tags');
+      post.tags.forEach(t => tags.appendChild(el('span', 'post-tag', t)));
+      body.appendChild(tags);
+    }
+
+    host.classList.add('post-card');
+    host.innerHTML = '';
+    host.appendChild(head);
+    host.appendChild(body);
+
+    // Point the footer button at the post itself rather than the profile.
+    const footLink = host.parentElement.querySelector('.window-foot a');
+    if (footLink && post.url) footLink.href = post.url;
   })();
 
   // Scroll reveal
