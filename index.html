@@ -46,9 +46,9 @@
     --accent-soft-border: rgba(255, 77, 109, 0.2);
     --accent-2: #94a3b8;
     --success: #34d399;
-    --text: #e6e6ea;
+    --text: #cfcfd8;
     --text-dim: #9b9ba5;
-    --text-bright: #ffffff;
+    --text-bright: #e8e8ee;
     --border: rgba(255, 255, 255, 0.12);
     --border-hover: rgba(255, 77, 109, 0.4);
     --grid-line: rgba(255, 255, 255, 0.03);
@@ -641,6 +641,35 @@
     height: 100%;
     border: 0;
   }
+  /* Self-rendered resume pages — no browser PDF chrome */
+  .pdf-viewer {
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg-card-hover);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scrollbar-width: thin;
+  }
+  .pdf-page {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+  }
+  .pdf-loading {
+    margin: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  /* Fallback: browser viewer, only if pdf.js is unavailable */
+  .pdf-viewer > object { flex: 1 1 auto; width: 100%; border: 0; }
+
   /* Shown when an embed cannot render (no post set, or no inline PDF viewer) */
   .window-fallback {
     height: 100%;
@@ -833,7 +862,7 @@
       <div class="hero-cta">
         <a href="#contact" class="btn btn-primary">Get in Touch</a>
         <a href="#projects" class="btn btn-ghost">View Projects</a>
-        <a href="Stephens_Resume.pdf" download class="btn btn-ghost" style="display:flex;align-items:center;gap:8px;">
+        <a href="StephensResume_08_22_26.pdf" download class="btn btn-ghost" style="display:flex;align-items:center;gap:8px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Resume
         </a>
@@ -1040,16 +1069,12 @@
           <div class="window-dots"><i></i><i></i><i></i></div>
           <div class="window-title">Resume — Stephen Birch</div>
         </div>
-        <div class="window-body">
-          <object data="Stephens_Resume.pdf#view=FitH" type="application/pdf" aria-label="Resume of Stephen Birch">
-            <div class="window-fallback">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              <p>Your browser can't display PDFs inline. Use the download button below to open the resume.</p>
-            </div>
-          </object>
+        <div class="window-body pdf-viewer" id="pdfViewer" aria-label="Resume of Stephen Birch">
+          <!-- Pages are rendered to canvas by script; falls back to the browser
+               viewer if pdf.js can't load. -->
         </div>
         <div class="window-foot">
-          <a href="Stephens_Resume.pdf" download class="btn btn-primary">
+          <a href="StephensResume_08_22_26.pdf" download class="btn btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Download Resume
           </a>
@@ -1088,7 +1113,7 @@
           <div class="contact-card-value">stephenpbirch</div>
         </div>
       </a>
-      <a href="Stephens_Resume.pdf" download class="contact-card">
+      <a href="StephensResume_08_22_26.pdf" download class="contact-card">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
         <div>
           <div class="contact-card-label">Resume</div>
@@ -1118,6 +1143,90 @@
       try { localStorage.setItem('theme', 'dark'); } catch (e) {}
     }
   });
+
+  // ─── Resume viewer ──────────────────────────────────────────────────────
+  // The browser's built-in PDF viewers add a toolbar, and Firefox auto-opens
+  // the outline sidebar over the page (this PDF sets PageMode=UseOutlines).
+  // None of that chrome is reachable from here, so pages are rendered to
+  // canvas instead. If pdf.js can't load, we fall back to the browser viewer.
+  const RESUME_FILE = 'StephensResume_08_22_26.pdf';
+  const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174';
+
+  (function renderResume() {
+    const host = document.getElementById('pdfViewer');
+    if (!host) return;
+
+    const setStatus = msg => {
+      host.innerHTML = '<div class="pdf-loading">' + msg + '</div>';
+    };
+    setStatus('Loading resume…');
+
+    const nativeFallback = () => {
+      host.innerHTML =
+        '<object data="' + RESUME_FILE + '#pagemode=none&zoom=page-width&toolbar=0&navpanes=0" type="application/pdf">' +
+          '<div class="window-fallback">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+            '<p>Your browser can\'t display PDFs inline. Use the download button below to open the resume.</p>' +
+          '</div>' +
+        '</object>';
+    };
+
+    const loadScript = src => new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('failed to load ' + src));
+      document.head.appendChild(s);
+    });
+
+    let doc = null;
+
+    async function paint() {
+      const width = host.clientWidth - 32; // minus padding
+      if (width <= 0) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const frag = document.createDocumentFragment();
+
+      for (let n = 1; n <= doc.numPages; n++) {
+        const page = await doc.getPage(n);
+        const base = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: (width / base.width) * dpr });
+        const canvas = document.createElement('canvas');
+        canvas.className = 'pdf-page';
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', 'Resume page ' + n + ' of ' + doc.numPages);
+        frag.appendChild(canvas);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      }
+
+      host.innerHTML = '';
+      host.appendChild(frag);
+    }
+
+    (async () => {
+      try {
+        await loadScript(PDFJS_BASE + '/pdf.min.js');
+        if (!window.pdfjsLib) throw new Error('pdfjsLib missing');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + '/pdf.worker.min.js';
+        doc = await pdfjsLib.getDocument(RESUME_FILE).promise;
+        await paint();
+
+        // Re-render on resize so the canvas stays sharp.
+        let timer;
+        let lastWidth = host.clientWidth;
+        window.addEventListener('resize', () => {
+          if (host.clientWidth === lastWidth) return;
+          lastWidth = host.clientWidth;
+          clearTimeout(timer);
+          timer = setTimeout(() => { paint().catch(nativeFallback); }, 250);
+        });
+      } catch (err) {
+        nativeFallback();
+      }
+    })();
+  })();
 
   // ─── Latest LinkedIn post ───────────────────────────────────────────────
   // LinkedIn has no public feed for a static site, so the post is pinned by
