@@ -117,7 +117,9 @@ body {
 .content { position: relative; z-index: 1; }
 
 /* ─── Navigation ─── */
-nav {
+/* Scoped to the header: a bare `nav` rule would also catch the
+   prev/next block at the foot of a project page and pin it to the top. */
+.site-nav {
   position: fixed;
   top: 0;
   width: 100%;
@@ -1088,7 +1090,7 @@ footer {
 
 /* ─── Responsive ─── */
 @media (max-width: 900px) {
-  nav { padding: 14px 24px; }
+  .site-nav { padding: 14px 24px; }
   .nav-right { gap: 20px; }
   .nav-links { gap: 20px; }
   .hero { flex-direction: column; padding: 120px 28px 60px; gap: 40px; }
