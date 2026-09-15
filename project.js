@@ -7,6 +7,9 @@
   const project = PROJECTS[index];
   const host = document.getElementById('projectRoot');
 
+  // Every project page is gated behind a work-in-progress cover for now.
+  showWipCover(project ? project.name : null);
+
   // Unknown or missing slug: say so rather than rendering an empty shell.
   if (!project) {
     document.title = 'Project not found — Stephen Birch';
@@ -85,7 +88,37 @@
   if (next) nav.appendChild(navCard(next, 'Next →', 'next'));
   if (nav.children.length) host.appendChild(nav);
 
+  if (next) buildNextFab(next, nav);
+
   observeReveals(host);
+
+  /* Small floating shortcut to the next project, pinned to the right edge.
+     It steps aside once the footer nav is in view so the two don't stack up. */
+  function buildNextFab(nextProject, footerNav) {
+    const fab = el('a', 'project-fab');
+    fab.href = 'project.html?p=' + encodeURIComponent(nextProject.slug);
+    fab.setAttribute('aria-label', 'Next project: ' + nextProject.name);
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = '<path d="M5 12h14M13 6l6 6-6 6"/>';
+    fab.appendChild(svg);
+
+    const text = el('div', 'fab-text');
+    text.appendChild(el('span', 'fab-dir', 'Next'));
+    text.appendChild(el('span', 'fab-name', nextProject.name));
+    fab.appendChild(text);
+
+    (document.querySelector('.content') || document.body).appendChild(fab);
+
+    // Once the footer nav scrolls into view the floating copy is redundant.
+    if (footerNav && 'IntersectionObserver' in window) {
+      new IntersectionObserver(entries => {
+        entries.forEach(e => fab.classList.toggle('is-hidden', e.isIntersecting));
+      }, { rootMargin: '0px 0px -80px 0px' }).observe(footerNav);
+    }
+  }
 
   /* ── Gallery item builders ── */
   function galleryItem(item) {
@@ -165,6 +198,55 @@
     box.appendChild(el('span', null, 'Media coming soon'));
     box.appendChild(el('span', null, src.split('/').pop()));
     return box;
+  }
+
+  /* ── Work-in-progress cover ──
+     Sits above everything and locks scrolling, so the page reads as unfinished
+     rather than half-built. The content below is left intact in the DOM — this
+     hides it visually, it does not protect it. Delete this call (and the
+     showWipCover function) to open the project pages back up. */
+  function showWipCover(name) {
+    const mk = (tag, cls, text) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    };
+
+    const cover = mk('div', 'wip-overlay');
+    cover.setAttribute('role', 'dialog');
+    cover.setAttribute('aria-modal', 'true');
+    cover.setAttribute('aria-label', 'Work in progress');
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>' +
+      '<path d="M12 9v4"/><path d="M12 17h.01"/>';
+    cover.appendChild(svg);
+
+    cover.appendChild(mk('div', 'wip-title', 'Work in Progress'));
+    if (name) cover.appendChild(mk('div', 'wip-project', name));
+    cover.appendChild(mk('p', 'wip-sub',
+      'This project page is still being built. The write-up and media aren’t ' +
+      'ready to show yet — check back soon.'));
+
+    const back = mk('a', 'wip-back', '← Back to the site');
+    back.href = 'index.html';
+    cover.appendChild(back);
+
+    document.body.appendChild(cover);
+    // Lock both: body alone still leaves the root scrollable in some browsers.
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    // Keep the covered page out of the tab order and off screen readers.
+    const content = document.querySelector('.content');
+    if (content) {
+      content.setAttribute('aria-hidden', 'true');
+      if ('inert' in HTMLElement.prototype) content.inert = true;
+    }
+    back.focus();
   }
 })();
 

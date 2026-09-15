@@ -117,7 +117,9 @@ body {
 .content { position: relative; z-index: 1; }
 
 /* ─── Navigation ─── */
-nav {
+/* Scoped to the top bar: the prev/next block on a project page is also a
+   <nav>, and a bare `nav` selector pinned it to the top of the viewport. */
+.content > nav {
   position: fixed;
   top: 0;
   width: 100%;
@@ -843,6 +845,81 @@ footer {
 /* ══════════════════════════════════════════════════════════════════
    Project detail pages
    ══════════════════════════════════════════════════════════════════ */
+/* ─── Work-in-progress gate ───
+   Covers a project page entirely while it is still being written. The page
+   content stays in the DOM (this is a visual cover, not access control). */
+.wip-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 60px 24px;
+  text-align: center;
+  background: var(--bg);
+}
+.wip-overlay::before, .wip-overlay::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: repeating-linear-gradient(
+    45deg, var(--accent) 0 16px, transparent 16px 32px);
+  opacity: 0.75;
+}
+.wip-overlay::before { top: 0; }
+.wip-overlay::after { bottom: 0; }
+.wip-overlay svg {
+  width: clamp(44px, 8vw, 70px);
+  height: clamp(44px, 8vw, 70px);
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.wip-title {
+  font-family: var(--mono);
+  font-size: clamp(28px, 8vw, 84px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: clamp(1px, 0.5vw, 6px);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.wip-project {
+  font-family: var(--mono);
+  font-size: clamp(11px, 2vw, 14px);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.wip-sub {
+  max-width: 520px;
+  font-size: clamp(14px, 2vw, 17px);
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+.wip-back {
+  margin-top: 10px;
+  padding: 13px 26px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-bright);
+  font-size: 15px;
+  text-decoration: none;
+  transition: border-color 0.3s, background 0.3s;
+}
+.wip-back:hover, .wip-back:focus-visible {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+}
+
 .project-hero {
   max-width: 1000px;
   margin: 0 auto;
@@ -1033,6 +1110,7 @@ footer {
 
 /* Next/prev project nav at the foot of a detail page */
 .project-nav {
+  position: static;
   max-width: 1000px;
   margin: 0 auto;
   padding: 40px 60px 100px;
@@ -1066,6 +1144,70 @@ footer {
 .project-nav .name { color: var(--text-bright); font-size: 16px; font-weight: 500; }
 .project-nav a.next { text-align: right; }
 
+/* Compact "next project" button that rides along the right edge of the
+   viewport. Collapsed it is just an arrow; hovering/focusing reveals the
+   project name. It hides itself once the footer nav is on screen. */
+.project-fab {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 10px;
+  max-width: 50px;
+  padding: 13px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: max-width 0.35s ease, opacity 0.3s ease, visibility 0.3s ease,
+              border-color 0.3s ease, background 0.3s ease;
+}
+.project-fab:hover, .project-fab:focus-visible {
+  max-width: 320px;
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+}
+.project-fab svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.project-fab .fab-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  line-height: 22px;
+}
+.project-fab .fab-dir {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.project-fab .fab-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-bright);
+}
+.project-fab.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* ─── Animations ─── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(24px); }
@@ -1088,7 +1230,7 @@ footer {
 
 /* ─── Responsive ─── */
 @media (max-width: 900px) {
-  nav { padding: 14px 24px; }
+  .content > nav { padding: 14px 24px; }
   .nav-right { gap: 20px; }
   .nav-links { gap: 20px; }
   .hero { flex-direction: column; padding: 120px 28px 60px; gap: 40px; }
@@ -1117,6 +1259,9 @@ footer {
   .window-body.pdf-viewer { height: auto; }
   .gallery { grid-template-columns: 1fr; }
   .project-nav a.next { text-align: left; }
+  .project-fab { right: 14px; padding: 11px; max-width: 44px; }
+  .project-fab svg { width: 20px; height: 20px; }
+  .project-fab:hover, .project-fab:focus-visible { max-width: calc(100vw - 28px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
